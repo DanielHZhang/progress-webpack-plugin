@@ -1,0 +1,7 @@
+# Dependencies
+node_modules/
+lib/
+
+# Logs
+*.log
+yarn.lock
