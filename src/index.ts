@@ -2,117 +2,119 @@ import chalk from 'chalk';
 import log from 'log-update';
 import {ProgressPlugin} from 'webpack';
 
-export function ProgressWebpackPlugin() {
-  const absoluteProjectPath = process.cwd();
-  let startTime = new Date().getTime();
-  let previousStep = 0;
-  let logLine = '';
+export class ProgressWebpackPlugin extends ProgressPlugin {
+  constructor() {
+    const absoluteProjectPath = process.cwd();
+    let startTime = new Date().getTime();
+    let previousStep = 0;
+    let logLine = '';
 
-  //  Use the webpack-internal progress plugin as the base of the logger
-  return new ProgressPlugin((progress, message, moduleProgress, _, moduleName) => {
-    logLine = chalk.yellow(`[${Math.round(progress * 100)}%] `);
+    // Use the internal webpack progress plugin as the base of the logger
+    super((progress, message, moduleProgress, _, moduleName) => {
+      logLine = chalk.yellow(`[${Math.round(progress * 100)}%] `);
 
-    // Reset process variables for this run
-    if (previousStep === 0) {
-      startTime = new Date().getTime();
-    }
-
-    // STEP 1: COMPILATION
-    if (progress >= 0 && progress < 0.1) {
-      // Skip if we jumped back a step, else update the step counter
-      if (previousStep > 1) {
-        return;
+      // Reset process variables for this run
+      if (previousStep === 0) {
+        startTime = new Date().getTime();
       }
-      previousStep = 1;
-      logLine += chalk.white('Compiling modules ...');
-    }
 
-    // STEP 2: BUILDING
-    if (progress >= 0.1 && progress <= 0.7) {
-      // Skip if we jumped back a step, else update the step counter
-      if (previousStep > 2) {
-        return;
-      }
-      previousStep = 2;
-
-      // Log progress line
-      logLine += chalk.white('Building modules ...');
-
-      // Log additional information (if possible)
-      if (moduleName !== undefined && moduleProgress !== undefined) {
-        let betterModuleName = moduleName;
-
-        // Only show the file that is actually being processed (and remove all details about used loaders)
-        if (betterModuleName.indexOf('!') !== -1) {
-          let splitModuleName = betterModuleName.split('!');
-          betterModuleName = splitModuleName[splitModuleName.length - 1];
+      // STEP 1: COMPILATION
+      if (progress >= 0 && progress < 0.1) {
+        // Skip if we jumped back a step, else update the step counter
+        if (previousStep > 1) {
+          return;
         }
+        previousStep = 1;
+        logLine += chalk.white('Compiling modules ...');
+      }
 
-        // Transform absolute paths into relative ones (to shorten the so so incredible long path)
-        if (betterModuleName.indexOf(absoluteProjectPath) !== -1) {
+      // STEP 2: BUILDING
+      if (progress >= 0.1 && progress <= 0.7) {
+        // Skip if we jumped back a step, else update the step counter
+        if (previousStep > 2) {
+          return;
+        }
+        previousStep = 2;
+
+        // Log progress line
+        logLine += chalk.white('Building modules ...');
+
+        // Log additional information (if possible)
+        if (moduleName !== undefined && moduleProgress !== undefined) {
+          let betterModuleName = moduleName;
+
+          // Only show the file that is actually being processed (and remove all details about used loaders)
+          if (betterModuleName.indexOf('!') !== -1) {
+            let splitModuleName = betterModuleName.split('!');
+            betterModuleName = splitModuleName[splitModuleName.length - 1];
+          }
+
+          // Transform absolute paths into relative ones (to shorten the so so incredible long path)
+          if (betterModuleName.indexOf(absoluteProjectPath) !== -1) {
+            betterModuleName = betterModuleName
+              .split(`${absoluteProjectPath}`)[1] // Transform absolute path to relative one
+              .substring(1); // Remove leading path slash
+          }
+
+          // Improve the path presentation further by enforcing style consistency and removing unnecessary details
           betterModuleName = betterModuleName
-            .split(`${absoluteProjectPath}`)[1] // Transform absolute path to relative one
-            .substring(1); // Remove leading path slash
+            .replace(/\\/g, '/')
+            .replace('./', '')
+            .replace('multi ', '');
+
+          // Add extra details about whether the currently processed module is an internal or external one
+          if (betterModuleName.startsWith('node_modules')) {
+            betterModuleName = `${betterModuleName} ~ external`;
+          }
+          if (betterModuleName.startsWith('src')) {
+            betterModuleName = `${betterModuleName} ~ internal`;
+          }
+
+          const [done, all] = moduleProgress.split('/');
+          const moduleDetails = `${done} of ${all} :: ${betterModuleName}`;
+          logLine += chalk.grey(` (${moduleDetails})`);
         }
+      }
 
-        // Improve the path presentation further by enforcing style consistency and removing unnecessary details
-        betterModuleName = betterModuleName
-          .replace(/\\/g, '/')
-          .replace('./', '')
-          .replace('multi ', '');
-
-        // Add extra details about whether the currently processed module is an internal or external one
-        if (betterModuleName.startsWith('node_modules')) {
-          betterModuleName = `${betterModuleName} ~ external`;
+      // STEP 3: OPTIMIZATION
+      if (progress > 0.7 && progress < 0.95) {
+        // Skip if we jumped back a step, else update the step counter
+        if (previousStep > 3) {
+          return;
         }
-        if (betterModuleName.startsWith('src')) {
-          betterModuleName = `${betterModuleName} ~ internal`;
+        previousStep = 3;
+
+        // Log progress line (with sub-progress indicator)
+        logLine += chalk.white('Optimizing modules ...');
+        const formattedMessageExtra = progress === 0.91 ? ' -- may take a while' : '';
+        logLine += chalk.grey(` (${message}${formattedMessageExtra})`);
+      }
+
+      // STEP 4: EMIT
+      if (progress >= 0.95 && progress < 1) {
+        // Skip if we jumped back a step, else update the step counter
+        if (previousStep > 4) {
+          return;
         }
-
-        const [betterModulesDone, betterAllModules] = moduleProgress.split('/');
-        const moduleDetails = `${betterModulesDone} of ${betterAllModules} :: ${betterModuleName}`;
-        logLine += chalk.grey(` (${moduleDetails})`);
+        previousStep = 4;
+        logLine += chalk.white('Emiting files ...');
       }
-    }
 
-    // STEP 3: OPTIMIZATION
-    if (progress > 0.7 && progress < 0.95) {
-      // Skip if we jumped back a step, else update the step counter
-      if (previousStep > 3) {
-        return;
+      // STEP 5: FOOTER
+      if (progress === 1) {
+        // Calculate process time
+        previousStep = 0;
+        const finishTime = new Date().getTime();
+        const processTime = ((finishTime - startTime) / 1000).toFixed(3);
+        logLine = chalk.white(`[Webpack] Finished in ${processTime} seconds.`); // Overwrite
       }
-      previousStep = 3;
 
-      // Log progress line (with sub-progress indicator)
-      logLine += chalk.white('Optimizing modules ...');
-      const formattedMessageExtra = progress === 0.91 ? ' -- may take a while' : '';
-      logLine += chalk.grey(` (${message}${formattedMessageExtra})`);
-    }
-
-    // STEP 4: EMIT
-    if (progress >= 0.95 && progress < 1) {
-      // Skip if we jumped back a step, else update the step counter
-      if (previousStep > 4) {
-        return;
+      log(logLine);
+      if (progress === 1) {
+        log.done();
       }
-      previousStep = 4;
-      logLine += chalk.white('Emiting files ...');
-    }
-
-    // STEP 5: FOOTER
-    if (progress === 1) {
-      // Calculate process time
-      previousStep = 0;
-      const finishTime = new Date().getTime();
-      const processTime = ((finishTime - startTime) / 1000).toFixed(3);
-      logLine = chalk.white(`[Webpack] Finished in ${processTime} seconds.`); // Overwrite
-    }
-
-    log(logLine);
-    if (progress === 1) {
-      log.done();
-    }
-  });
+    });
+  }
 }
 
 export default ProgressWebpackPlugin;
