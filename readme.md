@@ -1,6 +1,6 @@
 # Progress Webpack Plugin
 
-A plugin for [Webpack 4](https://webpack.js.org/) that adds a detailed and visually appealing build progress in the command line.
+A plugin for [Webpack 4](https://webpack.js.org/) that adds a minimal build progress in the command line during builds.
 
 ## Installation
 
