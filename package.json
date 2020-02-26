@@ -4,20 +4,8 @@
   "version": "1.0.0",
   "author": "Daniel Zhang",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/DanielHZhang/progress-webpack-plugin.git"
-  },
-  "bugs": {
-    "url": "https://github.com/DanielHZhang/progress-webpack-plugin/issues"
-  },
-  "homepage": "https://github.com/DanielHZhang/progress-webpack-plugin",
-  "keywords": [
-    "webpack",
-    "plugin",
-    "progress",
-    "simple",
-    "logger"
+  "files": [
+    "lib/**/*"
   ],
   "scripts": {
     "build": "rm -rf lib && tsc-silent -p tsconfig.json --suppress @",
@@ -44,5 +32,20 @@
     "tsc-silent": "^1.2.1",
     "typescript": "^3.8.2",
     "webpack": "^4.41.6"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DanielHZhang/progress-webpack-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DanielHZhang/progress-webpack-plugin/issues"
+  },
+  "homepage": "https://github.com/DanielHZhang/progress-webpack-plugin",
+  "keywords": [
+    "webpack",
+    "plugin",
+    "progress",
+    "simple",
+    "logger"
+  ]
 }
