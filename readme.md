@@ -1,10 +1,6 @@
-<div align="center">
-
 # Progress Webpack Plugin
 
 A plugin for [Webpack 4](https://webpack.js.org/) that adds a detailed and visually appealing build progress in the command line.
-
-</div>
 
 ## Installation
 
@@ -17,8 +13,6 @@ npm i @supersede/progress-webpack-plugin --save-dev
 ```bash
 yarn add @supersede/progress-webpack-plugin -D
 ```
-
-<br>
 
 ## Usage
 
