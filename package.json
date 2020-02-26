@@ -1,7 +1,7 @@
 {
   "name": "@supersede/progress-webpack-plugin",
   "description": "A simple progress plugin for Webpack.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Daniel Zhang",
   "license": "MIT",
   "files": [
