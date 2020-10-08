@@ -1,21 +1,25 @@
 import chalk from 'chalk';
-import log from 'log-update';
+import readline from 'readline';
 import {ProgressPlugin} from 'webpack';
 
+type Options = {
+  logTotalDuration?: boolean;
+};
+
 export class ProgressWebpackPlugin extends ProgressPlugin {
-  constructor() {
+  constructor(options: Options = {logTotalDuration: true}) {
     const absoluteProjectPath = process.cwd();
-    let startTime = new Date().getTime();
+    let startTime = Date.now();
     let previousStep = 0;
-    let logLine = '';
+    let lineOutput = '';
 
     // Use the internal webpack progress plugin as the base of the logger
     super((progress, message, moduleProgress, _, moduleName) => {
-      logLine = chalk.yellow(`[${Math.round(progress * 100)}%] `);
+      lineOutput = chalk.yellow(`[${Math.round(progress * 100)}%] `);
 
       // Reset process variables for this run
       if (previousStep === 0) {
-        startTime = new Date().getTime();
+        startTime = Date.now();
       }
 
       // STEP 1: COMPILATION
@@ -25,7 +29,7 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
           return;
         }
         previousStep = 1;
-        logLine += chalk.white('Compiling modules ...');
+        lineOutput += chalk.white('Compiling modules ...');
       }
 
       // STEP 2: BUILDING
@@ -37,7 +41,7 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
         previousStep = 2;
 
         // Log progress line
-        logLine += chalk.white('Building modules ...');
+        lineOutput += chalk.white('Building modules ...');
 
         // Log additional information (if possible)
         if (moduleName !== undefined && moduleProgress !== undefined) {
@@ -45,7 +49,7 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
 
           // Only show the file that is actually being processed (and remove all details about used loaders)
           if (betterModuleName.indexOf('!') !== -1) {
-            let splitModuleName = betterModuleName.split('!');
+            const splitModuleName = betterModuleName.split('!');
             betterModuleName = splitModuleName[splitModuleName.length - 1];
           }
 
@@ -71,8 +75,7 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
           }
 
           const [done, all] = moduleProgress.split('/');
-          const moduleDetails = `${done} of ${all} :: ${betterModuleName}`;
-          logLine += chalk.grey(` (${moduleDetails})`);
+          lineOutput += chalk.grey(` (${done} of ${all} :: ${betterModuleName})`);
         }
       }
 
@@ -85,9 +88,9 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
         previousStep = 3;
 
         // Log progress line (with sub-progress indicator)
-        logLine += chalk.white('Optimizing modules ...');
+        lineOutput += chalk.white('Optimizing modules ...');
         const formattedMessageExtra = progress === 0.91 ? ' -- may take a while' : '';
-        logLine += chalk.grey(` (${message}${formattedMessageExtra})`);
+        lineOutput += chalk.grey(` (${message}${formattedMessageExtra})`);
       }
 
       // STEP 4: EMIT
@@ -97,21 +100,24 @@ export class ProgressWebpackPlugin extends ProgressPlugin {
           return;
         }
         previousStep = 4;
-        logLine += chalk.white('Emiting files ...');
+        lineOutput += chalk.white('Emiting files ...');
       }
 
       // STEP 5: FOOTER
       if (progress === 1) {
         // Calculate process time
         previousStep = 0;
-        const finishTime = new Date().getTime();
+        const finishTime = Date.now();
         const processTime = ((finishTime - startTime) / 1000).toFixed(3);
-        logLine = chalk.white(`[Webpack] Finished in ${processTime} seconds.`); // Overwrite
-      }
-
-      log(logLine);
-      if (progress === 1) {
-        log.done();
+        if (options.logTotalDuration) {
+          process.stdout.write(
+            chalk.yellow('[Webpack] ') + chalk.greenBright(`Finished in ${processTime} seconds.\n`)
+          );
+        }
+      } else {
+        // Log to stdout
+        readline.clearLine(process.stdout, 0);
+        process.stdout.write(`${lineOutput}\r`);
       }
     });
   }
